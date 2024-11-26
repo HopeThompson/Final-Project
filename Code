@@ -1,0 +1,79 @@
+# Load necessary libraries
+library(readr)      # For reading CSV files
+library(ggplot2)    # For creating plots
+library(broom)      # For tidying model output
+
+# Step 1: Read the data from a CSV file
+# Ensure the file 'COMP_Model.csv' is in your working directory
+study_data <- read_csv("COMP_Model.csv")
+
+# Print the first few rows of the data to verify it's loaded correctly
+print(head(study_data))
+
+# Step 2: Explore the data
+# Calculate summary statistics for both variables
+summary(study_data)
+
+# Create a scatter plot to visualize the relationship between Time and Wakeful
+ggplot(study_data, aes(x = Time, y = Wakeful)) +
+  geom_point() +
+  scale_x_continuous(breaks = 1:20) +  # Adjust as needed for your dataset
+  labs(title = "Scatter Plot of Wakefulness vs. Time",
+       x = "Time (days)",
+       y = "Wakefulness (number of times awoken)") +
+  theme_minimal()
+
+# Step 3: Perform simple linear regression
+# Fit a linear model where Wakeful is the dependent variable and Time is the independent variable
+model <- lm(Wakeful ~ Time, data = study_data)
+
+# Step 4: Examine the model results
+# Print a summary of the model, including coefficients, R-squared, and p-values
+summary(model)
+
+# Use broom to get a tidy version of the model coefficients
+tidy_model <- tidy(model)
+print(tidy_model)
+
+# Step 5: Visualize the regression curve (adding a curve instead of a line)
+ggplot(study_data, aes(x = Time, y = Wakeful)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "red") +  # Add polynomial curve
+  scale_x_continuous(breaks = 1:20) +  # Adjust as needed for your dataset
+  labs(title = "Polynomial Regression of Wakefulness Over Time",
+       x = "Time (days)",
+       y = "Wakefulness (number of times awoken)") +
+  theme_minimal()
+
+# Step 6: Model diagnostics
+# Create diagnostic plots to check assumptions
+par(mfrow = c(2, 2))  # Set up a 2x2 plot layout
+plot(model)
+
+# Step 7: Predictions
+# Create a data frame with new Time values for prediction
+new_time <- data.frame(Time = seq(min(study_data$Time), max(study_data$Time), length.out = 100))
+
+# Make predictions using the original linear model
+predictions <- predict(model, newdata = new_time, interval = "confidence")
+
+# Combine predictions with new_time
+prediction_data <- cbind(new_time, predictions)
+
+# Plot the original data and polynomial regression curve only (no confidence interval)
+ggplot() +
+  geom_point(data = study_data, aes(x = Time, y = Wakeful)) +
+  geom_smooth(data = study_data, aes(x = Time, y = Wakeful), method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "blue") +  # Add polynomial curve
+  scale_x_continuous(breaks = 1:20) +  # Adjust as needed for your dataset
+  labs(title = "Polynomial Regression of Wakefulness Over Time",
+       x = "Time (days)",
+       y = "Wakefulness (number of times awoken)") +
+  theme_minimal()
+
+# Print the R-squared value
+cat("R-squared:", summary(model)$r.squared, "\n")
+
+# Print the equation of the regression line
+cat("Regression equation: Wakeful =",
+    round(coef(model)[1], 3), "+",
+    round(coef(model)[2], 3), "* Time\n")
